@@ -1,0 +1,100 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: supportpilot
+  config:
+    # Optional backend/.env file (copy .env.example). Real environment variables win.
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/supportpilot}
+    username: ${DB_USERNAME:supportpilot}
+    password: ${DB_PASSWORD:supportpilot}
+    hikari:
+      connection-timeout: 10000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none # the schema is owned by Flyway (src/main/resources/db/migration)
+  flyway:
+    enabled: true
+
+  ai:
+    # Provider selection. Only the selected provider's beans are created, so the app starts
+    # without API keys for the providers you don't use.
+    model:
+      chat: ${AI_CHAT_PROVIDER:ollama}            # ollama | openai | google-genai
+      embedding: ${AI_EMBEDDING_PROVIDER:ollama}  # ollama | openai
+      # Unused OpenAI model types are disabled explicitly (they default to on).
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_CHAT_MODEL:qwen2.5:7b}
+          temperature: 0.2
+      embedding:
+        options:
+          model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+          temperature: 0.2
+      embedding:
+        # Optional overrides, e.g. to use Gemini's OpenAI-compatible embeddings endpoint.
+        api-key: ${OPENAI_EMBEDDING_API_KEY:}
+        base-url: ${OPENAI_EMBEDDING_BASE_URL:}
+        embeddings-path: ${OPENAI_EMBEDDINGS_PATH:/v1/embeddings}
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+          dimensions: ${EMBEDDING_DIMENSIONS:768}
+
+    google:
+      genai:
+        api-key: ${GOOGLE_API_KEY:}
+        chat:
+          options:
+            model: ${GEMINI_CHAT_MODEL:gemini-2.5-flash}
+            temperature: 0.2
+
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: ${EMBEDDING_DIMENSIONS:768}   # must match the embedding model
+        index-type: ${PGVECTOR_INDEX_TYPE:HNSW}   # HNSW supports up to 2000 dimensions; use NONE above
+        distance-type: COSINE_DISTANCE
+
+supportpilot:
+  approver:
+    # Leave empty in development: a random key is generated and printed at startup.
+    api-key: ${APPROVER_API_KEY:}
+  rag:
+    top-k: ${RAG_TOP_K:4}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.4}
+  refunds:
+    window-days: ${REFUND_WINDOW_DAYS:30}
+  knowledge:
+    location: classpath:knowledge/*.md
+    load-on-startup: true
+  cors-origins: ${CORS_ORIGINS:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    # Set to DEBUG to log every prompt and response (SimpleLoggerAdvisor)
+    org.springframework.ai.chat.client.advisor: ${AI_LOG_LEVEL:INFO}
