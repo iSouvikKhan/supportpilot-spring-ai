@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ORD-1001", "customerEmail": "alice@example.com", "customerName": "Alice Johnson",
+    "status": "DELIVERED", "currency": "USD",
+    "orderedDaysAgo": 9, "shippedDaysAgo": 8, "deliveredDaysAgo": 5,
+    "carrier": "UPS", "trackingNumber": "1Z999AA10123456784",
+    "items": [{ "product": "Aurora Wireless Earbuds Pro", "quantity": 1, "unitPrice": 129.99 }]
+  },
+  {
+    "id": "ORD-1002", "customerEmail": "alice@example.com", "customerName": "Alice Johnson",
+    "status": "SHIPPED", "currency": "USD",
+    "orderedDaysAgo": 3, "shippedDaysAgo": 1, "etaInDays": 2,
+    "carrier": "FedEx", "trackingNumber": "794600000001",
+    "items": [
+      { "product": "USB-C Fast Charger 65W", "quantity": 2, "unitPrice": 34.50 },
+      { "product": "Braided USB-C Cable 2m", "quantity": 2, "unitPrice": 12.00 }
+    ]
+  },
+  {
+    "id": "ORD-1003", "customerEmail": "alice@example.com", "customerName": "Alice Johnson",
+    "status": "DELIVERED", "currency": "USD",
+    "orderedDaysAgo": 52, "shippedDaysAgo": 50, "deliveredDaysAgo": 45,
+    "carrier": "USPS", "trackingNumber": "9400100000000000000001",
+    "items": [{ "product": "Nimbus Smart Speaker", "quantity": 1, "unitPrice": 79.00 }]
+  },
+  {
+    "id": "ORD-1004", "customerEmail": "bob@example.com", "customerName": "Bob Smith",
+    "status": "PROCESSING", "currency": "USD",
+    "orderedDaysAgo": 1,
+    "items": [{ "product": "Vertex 27\" 4K Monitor", "quantity": 1, "unitPrice": 349.00 }]
+  },
+  {
+    "id": "ORD-1005", "customerEmail": "bob@example.com", "customerName": "Bob Smith",
+    "status": "DELIVERED", "currency": "USD",
+    "orderedDaysAgo": 16, "shippedDaysAgo": 15, "deliveredDaysAgo": 12,
+    "carrier": "UPS", "trackingNumber": "1Z999AA10123456785",
+    "items": [{ "product": "Photon 14 Ultrabook", "quantity": 1, "unitPrice": 899.00 }]
+  },
+  {
+    "id": "ORD-1006", "customerEmail": "bob@example.com", "customerName": "Bob Smith",
+    "status": "CANCELLED", "currency": "USD",
+    "orderedDaysAgo": 20,
+    "items": [{ "product": "Gaming Mouse G5", "quantity": 1, "unitPrice": 49.99 }]
+  },
+  {
+    "id": "ORD-1007", "customerEmail": "carol@example.com", "customerName": "Carol Diaz",
+    "status": "DELIVERED", "currency": "USD",
+    "orderedDaysAgo": 6, "shippedDaysAgo": 5, "deliveredDaysAgo": 2,
+    "carrier": "DHL", "trackingNumber": "JD014600003828000001",
+    "items": [
+      { "product": "Mechanical Keyboard K87", "quantity": 1, "unitPrice": 119.00 },
+      { "product": "Wrist Rest", "quantity": 1, "unitPrice": 19.00 }
+    ]
+  },
+  {
+    "id": "ORD-1008", "customerEmail": "carol@example.com", "customerName": "Carol Diaz",
+    "status": "SHIPPED", "currency": "USD",
+    "orderedDaysAgo": 10, "shippedDaysAgo": 8, "etaInDays": -1,
+    "carrier": "USPS", "trackingNumber": "9400100000000000000002",
+    "items": [{ "product": "Action Camera X4", "quantity": 1, "unitPrice": 249.00 }]
+  }
+]
