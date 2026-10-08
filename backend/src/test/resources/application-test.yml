@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:supportpilot;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  flyway:
+    enabled: false # V1 uses a PostgreSQL partial index; tests let Hibernate create the H2 schema
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+
+supportpilot:
+  approver:
+    api-key: test-key
+  knowledge:
+    load-on-startup: false
