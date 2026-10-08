@@ -1,0 +1,161 @@
+<div class="mx-auto max-w-4xl p-4">
+  @if (!signedIn()) {
+    <section class="mx-auto mt-10 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h1 class="text-lg font-semibold text-slate-800">Approver console</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Refund requests created by the assistant wait here until a person approves or rejects them. Enter the approver
+        key: the value of <code class="rounded bg-slate-100 px-1">APPROVER_API_KEY</code>, or the key printed in the
+        backend log at startup.
+      </p>
+      @if (error()) {
+        <p class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ error() }}</p>
+      }
+      <form class="mt-5 space-y-4" (ngSubmit)="signIn()">
+        <label class="block text-sm font-medium text-slate-700">
+          Your name
+          <input
+            name="approverName"
+            required
+            maxlength="100"
+            [(ngModel)]="nameDraft"
+            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+          />
+        </label>
+        <label class="block text-sm font-medium text-slate-700">
+          Approver key
+          <input
+            name="approverKey"
+            type="password"
+            required
+            autocomplete="off"
+            [(ngModel)]="keyDraft"
+            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+          />
+        </label>
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
+          [disabled]="!keyDraft.trim() || !nameDraft.trim()"
+        >
+          Open console
+        </button>
+      </form>
+    </section>
+  } @else {
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-lg font-semibold text-slate-800">Refund approvals</h1>
+        <p class="text-sm text-slate-500">Signed in as {{ auth.name() }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="rounded-md px-3 py-1"
+            [class]="tab() === 'PENDING' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
+            (click)="selectTab('PENDING')"
+          >
+            Pending
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="rounded-md px-3 py-1"
+            [class]="tab() === 'ALL' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
+            (click)="selectTab('ALL')"
+          >
+            All
+          </button>
+        </div>
+        <button type="button" class="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100" (click)="load()">
+          Refresh
+        </button>
+        <button type="button" class="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100" (click)="signOut()">
+          Sign out
+        </button>
+      </div>
+    </div>
+
+    @if (notice()) {
+      <div class="mb-3 flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <span>{{ notice() }}</span>
+        <button type="button" class="text-emerald-700/70 hover:text-emerald-900" (click)="notice.set(null)" aria-label="Dismiss">✕</button>
+      </div>
+    }
+    @if (error()) {
+      <p class="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">{{ error() }}</p>
+    }
+
+    @if (loading() && requests().length === 0) {
+      <div class="space-y-3">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="h-32 animate-pulse rounded-xl bg-white"></div>
+        }
+      </div>
+    } @else if (requests().length === 0) {
+      <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <p class="text-2xl">🎉</p>
+        <p class="mt-2 font-medium text-slate-700">
+          {{ tab() === 'PENDING' ? 'No refund requests waiting for review.' : 'No refund requests yet.' }}
+        </p>
+        <p class="mt-1 text-sm text-slate-500">New requests appear here when customers ask the assistant for a refund.</p>
+      </div>
+    } @else {
+      <ul class="space-y-3">
+        @for (r of requests(); track r.id) {
+          <li class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p class="flex items-center gap-2">
+                  <span class="font-mono font-semibold text-slate-800">{{ r.orderId }}</span>
+                  <span class="rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 {{ statusStyle[r.status] }}">{{ r.status }}</span>
+                </p>
+                <p class="mt-0.5 text-sm text-slate-500">{{ r.customerEmail }} · requested {{ r.createdAt | date: 'medium' }}</p>
+              </div>
+              <p class="text-xl font-semibold text-slate-800">{{ r.amount | currency }}</p>
+            </div>
+            <blockquote class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">“{{ r.reason }}”</blockquote>
+
+            @if (r.status === 'PENDING') {
+              <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  maxlength="1000"
+                  placeholder="Note to the customer (required to reject)"
+                  [ngModel]="notes()[r.id] ?? ''"
+                  (ngModelChange)="setNote(r.id, $event)"
+                  [attr.aria-label]="'Note for ' + r.orderId"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                />
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="flex-1 rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-40 sm:flex-none"
+                    [disabled]="busyId() === r.id"
+                    (click)="decide(r, 'reject')"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40 sm:flex-none"
+                    [disabled]="busyId() === r.id"
+                    (click)="decide(r, 'approve')"
+                  >
+                    {{ busyId() === r.id ? 'Saving…' : 'Approve' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <p class="mt-3 text-sm text-slate-500">
+                {{ r.status === 'APPROVED' ? 'Approved' : 'Rejected' }} by {{ r.decidedBy }} on {{ r.decidedAt | date: 'medium' }}
+                @if (r.decisionNote) { · “{{ r.decisionNote }}” }
+              </p>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

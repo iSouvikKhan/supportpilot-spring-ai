@@ -1,0 +1,250 @@
+<div class="mx-auto grid h-full max-w-7xl gap-4 p-4 lg:grid-cols-[320px_1fr]">
+  <!-- Sidebar: customer, orders, refund requests -->
+  <aside
+    class="min-h-0 flex-col gap-4 overflow-y-auto lg:flex"
+    [class.flex]="showSidebar()"
+    [class.hidden]="!showSidebar()"
+  >
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <label for="customer" class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        Signed in as (demo)
+      </label>
+      @if (customersError()) {
+        <p class="mt-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-700">{{ customersError() }}</p>
+      } @else if (customers().length === 0) {
+        <div class="mt-2 h-10 animate-pulse rounded-lg bg-slate-100"></div>
+      } @else {
+        <select
+          id="customer"
+          class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+          [ngModel]="customer()?.email"
+          (ngModelChange)="onCustomerChange($event)"
+        >
+          @for (c of customers(); track c.email) {
+            <option [value]="c.email">{{ c.name }} ({{ c.email }})</option>
+          }
+        </select>
+      }
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-xs font-semibold tracking-wide text-slate-500 uppercase">Orders</h2>
+        <button
+          type="button"
+          class="text-xs text-indigo-600 hover:underline disabled:opacity-50"
+          (click)="refreshSidebar()"
+          [disabled]="sidebarLoading()"
+        >
+          Refresh
+        </button>
+      </div>
+      @if (sidebarError()) {
+        <p class="rounded-lg bg-rose-50 p-2 text-sm text-rose-700">{{ sidebarError() }}</p>
+      } @else if (sidebarLoading() && orders().length === 0) {
+        @for (i of [1, 2, 3]; track i) {
+          <div class="mb-2 h-14 animate-pulse rounded-lg bg-slate-100"></div>
+        }
+      } @else if (orders().length === 0) {
+        <p class="text-sm text-slate-500">No orders for this customer.</p>
+      } @else {
+        <ul class="space-y-2">
+          @for (o of orders(); track o.id) {
+            <li class="rounded-lg border border-slate-100 p-3">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-sm font-semibold text-slate-800">{{ o.id }}</span>
+                <span class="rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 {{ orderStyle[o.status] }}">
+                  {{ o.status }}
+                </span>
+              </div>
+              <p class="mt-1 truncate text-xs text-slate-600">
+                {{ o.items[0]?.productName }}@if (o.items.length > 1) { +{{ o.items.length - 1 }} more }
+              </p>
+              <p class="mt-1 text-xs text-slate-400">
+                {{ o.total | currency: o.currency }} · ordered {{ o.orderedAt | date: 'mediumDate' }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h2 class="mb-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">Refund requests</h2>
+      @if (refunds().length === 0) {
+        <p class="text-sm text-slate-500">None yet. Ask the assistant for a refund to create one.</p>
+      } @else {
+        <ul class="space-y-2">
+          @for (r of refunds(); track r.id) {
+            <li class="rounded-lg border border-slate-100 p-3 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-semibold text-slate-800">{{ r.orderId }}</span>
+                <span class="rounded-full px-2 py-0.5 font-medium ring-1 {{ refundStyle[r.status] }}">{{ r.status }}</span>
+              </div>
+              <p class="mt-1 text-slate-600">{{ r.amount | currency }} · {{ r.createdAt | date: 'short' }}</p>
+              @if (r.decisionNote) {
+                <p class="mt-1 text-slate-500 italic">“{{ r.decisionNote }}”</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </aside>
+
+  <!-- Chat -->
+  <section class="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 lg:hidden"
+          (click)="showSidebar.set(!showSidebar())"
+        >
+          {{ showSidebar() ? 'Hide' : 'Show' }} orders
+        </button>
+        <h1 class="text-sm font-semibold text-slate-800">Support chat</h1>
+      </div>
+      <button
+        type="button"
+        class="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+        [disabled]="messages().length === 0 || sending()"
+        (click)="newConversation()"
+      >
+        New conversation
+      </button>
+    </div>
+
+    <div #scroller class="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-6">
+      @if (messages().length === 0) {
+        <div class="mx-auto flex max-w-md flex-col items-center py-10 text-center">
+          <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-2xl">🛟</div>
+          <h2 class="text-lg font-semibold text-slate-800">
+            Hi{{ customer() ? ' ' + customer()!.name.split(' ')[0] : '' }}, how can we help?
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Ask about an order, shipping, returns or warranty. Refunds you request are reviewed by a person before any
+            money moves.
+          </p>
+          <div class="mt-5 flex flex-wrap justify-center gap-2">
+            @for (s of suggestions; track s) {
+              <button
+                type="button"
+                class="rounded-full border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50"
+                [disabled]="!customer() || sending()"
+                (click)="useSuggestion(s)"
+              >
+                {{ s }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @for (m of messages(); track m.id) {
+        @switch (m.role) {
+          @case ('user') {
+            <div class="flex justify-end">
+              <div class="max-w-[85%] rounded-2xl rounded-br-md bg-indigo-600 px-4 py-2.5 text-sm whitespace-pre-wrap text-white">
+                {{ m.text }}
+              </div>
+            </div>
+          }
+          @case ('assistant') {
+            <div class="flex gap-3">
+              <div class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">SP</div>
+              <div class="min-w-0 flex-1 space-y-2">
+                <div
+                  class="rounded-2xl rounded-tl-md bg-slate-100 px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-slate-800"
+                  [innerHTML]="format(m.text)"
+                ></div>
+
+                @for (a of m.actions ?? []; track $index) {
+                  <div
+                    class="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
+                    [class]="
+                      a.type === 'REFUND_REQUESTED'
+                        ? 'border-amber-200 bg-amber-50 text-amber-800'
+                        : a.type === 'REFUND_NOT_ALLOWED'
+                          ? 'border-rose-200 bg-rose-50 text-rose-800'
+                          : 'border-slate-200 bg-white text-slate-600'
+                    "
+                  >
+                    <span aria-hidden="true">{{ actionIcon(a) }}</span>
+                    <span>
+                      <span class="font-medium">{{ a.message }}</span>
+                      @if (a.orderId) { · <span class="font-mono">{{ a.orderId }}</span> }
+                      @if (a.amount !== null && a.type === 'REFUND_REQUESTED') { · {{ a.amount | currency }} }
+                      @if (a.type === 'REFUND_REQUESTED') {
+                        <span class="mt-0.5 block">Status: <strong>PENDING</strong>, waiting for a human approver.</span>
+                      }
+                    </span>
+                  </div>
+                }
+
+                @if (m.sources?.length) {
+                  <details class="text-xs text-slate-500">
+                    <summary class="cursor-pointer select-none hover:text-slate-700">
+                      Based on {{ m.sources!.length }} knowledge-base {{ m.sources!.length === 1 ? 'article' : 'articles' }}
+                    </summary>
+                    <ul class="mt-2 space-y-1.5">
+                      @for (s of m.sources; track $index) {
+                        <li class="rounded-md border border-slate-100 bg-white p-2">
+                          <span class="font-medium text-slate-700">{{ s.title || s.source }}</span>
+                          <span class="block text-slate-500">{{ s.excerpt }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                }
+              </div>
+            </div>
+          }
+          @case ('error') {
+            <div class="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700" role="alert">
+              <span aria-hidden="true">⚠️</span>
+              <div class="flex-1">
+                <p>{{ m.text }}</p>
+                <button type="button" class="mt-1 font-medium underline" (click)="retry()">Try again</button>
+              </div>
+            </div>
+          }
+        }
+      }
+
+      @if (sending()) {
+        <div class="flex items-center gap-3" aria-live="polite">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">SP</div>
+          <div class="flex gap-1 rounded-2xl bg-slate-100 px-4 py-3" aria-label="Assistant is typing">
+            <span class="h-2 w-2 animate-bounce rounded-full bg-slate-400"></span>
+            <span class="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]"></span>
+            <span class="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]"></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <form class="flex items-end gap-2 border-t border-slate-100 p-3" (ngSubmit)="send()">
+      <label for="message" class="sr-only">Message</label>
+      <textarea
+        id="message"
+        name="message"
+        rows="1"
+        maxlength="2000"
+        class="max-h-36 min-h-10 flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none disabled:bg-slate-50"
+        placeholder="Type your message…"
+        [ngModel]="draft()"
+        (ngModelChange)="draft.set($event)"
+        (keydown)="onKeydown($event)"
+        [disabled]="!customer()"
+      ></textarea>
+      <button
+        type="submit"
+        class="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+        [disabled]="!canSend()"
+      >
+        Send
+      </button>
+    </form>
+  </section>
+</div>
